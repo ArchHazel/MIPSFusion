@@ -66,7 +66,8 @@ def associate(first_list, second_list, offset=0.0, max_difference=0.02):
 
 
 def align(model, data):
-    """Align two trajectories using the method of Horn (closed-form).
+    """
+    Align two trajectories using the method of Horn (closed-form).
     Input:
     model -- first trajectory (3xn)
     data -- second trajectory (3xn)
@@ -77,7 +78,11 @@ def align(model, data):
     trans_error -- translational error per point (1xn)
     """
     numpy.set_printoptions(precision=3, suppress=True)
-    model_zerocentered = model - model.mean(1)
+    # if model.mean(1) contains nan
+    if not np.isnan(model.mean(1)).any():
+        model_zerocentered = model - model.mean(1)
+    else:
+        model_zerocentered = model
     data_zerocentered = data - data.mean(1)
 
     W = numpy.zeros((3, 3))
@@ -236,8 +241,9 @@ def evaluate(poses_gt, poses_est, plot):
     poses_est = poses_est.cpu().numpy()
 
     N = poses_gt.shape[0]
+    N_est = poses_est.shape[0]
     poses_gt = dict( [ (i, poses_gt[i]) for i in range(N) ] )
-    poses_est = dict( [ (i, poses_est[i]) for i in range(N) ] )
+    poses_est = dict( [ (i, poses_est[i]) for i in range(N_est) ] )
 
     results = evaluate_ate(poses_gt, poses_est, plot)
     return results
@@ -261,17 +267,18 @@ def convert_poses(c2w_list, N, scale, gt=True):
         c2w_list[idx][:3, 3] /= scale
         poses.append(get_tensor_from_camera(c2w_list[idx], Tquad=True))  # [tx, ty, tz, qx, qy, qz, qw] (tum format)
     poses = torch.stack(poses)
-    return poses, mask
+    return poses, mask # poses: Tensor(N,7); mask: Tensor(N)
 
 
 # @param poses_gt: dict of Tensor(4, 4);
 # @param poses_est: dict of Tensor(4, 4);
 # @param scale: default: 1
-def pose_evaluation(poses_gt, poses_est, scale, path_to_save, i, img='pose'):
-    N = len(poses_est)  # number of tracked pose
-    poses_gt, mask = convert_poses(poses_gt, N, scale)
-    poses_est, _ = convert_poses(poses_est, N, scale)
-    poses_est = poses_est[mask]
+def pose_evaluation(poses_gt, poses_est, scale, path_to_save, i, img='pose'): # 252 poses_gt; 26*4*4 poses_est
+    N = len(poses_est)  # number of tracked pose 26
+    poses_gt, mask_gt = convert_poses(poses_gt, N, scale)
+    poses_est, mask_est = convert_poses(poses_est, N, scale)
+    # mask_intersect = mask_gt & mask_est
+    # poses_est = poses_est[mask]
     plt_path = os.path.join(path_to_save, '{}_{}.png'.format(img, i))
 
     results = evaluate(poses_gt, poses_est, plot=plt_path)

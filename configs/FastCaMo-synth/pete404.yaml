@@ -1,0 +1,13 @@
+inherit_from: configs/FastCaMo-synth/kinect.yaml
+
+mapping:
+  bound: [[-5, 5], [-5, 5], [-5, 5]]
+  marching_cubes_bound: [[-5, 5], [-5, 5], [-5, 5]]
+
+data:
+  datadir: /mnt/c/Users/ivc-lab-5/Desktop/hazel/kinect/dataset
+  trainskip: 1
+  output: output/FastCaMo-synth/petr404
+  exp_name: "0"
+  starting_frame: -1
+

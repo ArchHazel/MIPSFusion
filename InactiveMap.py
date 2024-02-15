@@ -542,7 +542,7 @@ class InactiveMap():
             self.local_BA()
             time.sleep(self.sleep_time)
 
-            # self.logger.extract_a_mesh(self.slam.tracked_frame_Id, 0, self.model_list[0])  # for debug
+            self.logger.extract_a_mesh(self.slam.tracked_frame_Id, 0, self.model_list[0])  # for debug
 
             # if self.counter % 5 == 0:
             #     self.global_BA()

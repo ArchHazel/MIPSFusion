@@ -1,9 +1,9 @@
 import os
 from utils import config
+# from config import Config
 import torch
 from torch.utils.data import DataLoader
 import argparse
-
 from mipsfusion import MIPSFusion
 from model.scene_rep import JointEncoding
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt', type=str, help='Path of selected checkpoint.')
     args = parser.parse_args()
 
-    cfg = config.load_config(args.config)
+    cfg =  config.load_config(args.config)
 
     result_path = os.path.join(args.seq_result, "result")  # dir to save result of this running
     os.makedirs(result_path, exist_ok=True)

@@ -14,7 +14,7 @@ def get_dataset(config):
     elif config["dataset"] == "scannet":
         dataset = ScannetDataset
 
-    elif config["dataset"] == "fastcamo_synth":
+    elif config["dataset"] == "fastcamo_synth" or "kinect":
         dataset = FastCaMoDataset
 
     return dataset(config, config["data"]["datadir"], trainskip=config["data"]["trainskip"],
@@ -244,8 +244,8 @@ class FastCaMoDataset(BaseDataset):
         self.translation = translation
         self.sc_factor = sc_factor
         self.crop = crop
-        self.img_files = sorted(glob.glob(os.path.join(self.basedir, 'color', '*.png')), key=lambda x: int(os.path.basename(x)[:-4]))
-        self.depth_paths = sorted(glob.glob(os.path.join(self.basedir, 'depth', '*.png')), key=lambda x: int(os.path.basename(x)[:-4]))
+        self.img_files = sorted(glob.glob(os.path.join(self.basedir, 'color', '*.png')), key=lambda x: float(os.path.basename(x)[:-4]))
+        self.depth_paths = sorted(glob.glob(os.path.join(self.basedir, 'depth', '*.png')), key=lambda x: float(os.path.basename(x)[:-4]))
 
         if self.config["data"]["starting_frame"] > 0:
             self.img_files = [i for i in self.img_files if int(os.path.basename(i)[:-4]) >= self.config["data"]["starting_frame"]]

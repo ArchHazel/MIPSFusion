@@ -7,6 +7,7 @@ import time
 import torch.multiprocessing as mp
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from utils.utils import extract_mesh   
 
 from model.scene_rep import JointEncoding
 from model.keyframeSet import KeyframeSet
@@ -34,7 +35,8 @@ class MIPSFusion():
         self.create_active_localMLP_vars()
 
         try:
-            mp.set_start_method('spawn', force=True)
+            # mp.set_start_method('spawn', force=True)
+            mp.set_start_method('fork', force=True)
         except RuntimeError:
             pass
 
@@ -659,9 +661,11 @@ class MIPSFusion():
 
     # entry function
     def run(self):
+        debug_mesh = True
         # Create InactiveMap process
         processes = []
         for rank in range(1):
+            # mp.set_start_method('fork')
             p = mp.Process(target=self.inactive_map_start, args=())
             p.start()
             processes.append(p)
@@ -678,7 +682,7 @@ class MIPSFusion():
             else:
                 self.tracking_render(batch, i, self.config["tracking"]["iter_RO"], self.config["tracking"]["iter"])  # *** do tracking for each frame
     
-                if i % self.config["mapping"]["map_every"] == 0:  # *** do mapping every 5 frames
+                if i % self.config["mapping"]["map_every"] == 0:  # *** do mapping every 3 frames
                     self.local_BA(batch, i)
                     self.inactive_map.active_model_copy.load_state_dict(self.model.state_dict())
                     self.inactive_map.active_model_copy_Id[0] = self.active_localMLP_Id[0]
@@ -710,12 +714,19 @@ class MIPSFusion():
                 self.tracked_frame_Id[0] = i
 
                 if i % self.config["mesh"]["vis"] == 0:
-                    pose_relative = self.logger.convert_relative_pose(i)
-                    pose_world = self.logger.convert_world_pose(pose_relative)
+                    self.logger.img_render_save(self.model, self.est_c2w_data[i], batch["rgb"].squeeze(0), batch["depth"].squeeze(0), i)
+                    pose_relative = self.logger.convert_relative_pose(i) # 26 * 4 * 4
+                    pose_world = self.logger.convert_world_pose(pose_relative) # 26 * 4 * 4
                     pose_evaluation(self.pose_gt, pose_world, 1, os.path.join(self.config["data"]["output"], self.config["data"]["exp_name"]), i, img="pose")
                     self.logger.save_traj_tum(pose_world, os.path.join(self.config["data"]["output"], self.config["data"]["exp_name"], "traj_%d.txt" % i) )
 
-                if self.config["mesh"]["ckpt_freq"] > 0 and i % self.config["mesh"]["ckpt_freq"] == 0:
+                # if self.config["mesh"]["ckpt_freq"] > 0 and i % self.config["mesh"]["ckpt_freq"] == 0:
+                if debug_mesh:
+
+                    # extract_mesh(self.model, self.est_c2w_data, self.dataset, self.config, i, self.logger, self.device)
+                    # self.logger.extract_a_mesh(self.logger.slam.tracked_frame_Id, 0, self.logger.model_list[0])  # for debug
+                    # self.logger.extract_mesh_jointly_simple(submesh_list, save_path=self.config["data"]["output"])
+
                     self.logger.save_ckpt_active(self.tracked_frame_Id[0], self.model, self.active_localMLP_Id[0])
                     self.ckpt_frame_Id[0] = i
         

@@ -4,7 +4,9 @@ data:
   downsample: 1
   sc_factor: 1
   translation: 0
+  # num_workers: 1
   num_workers: 4
+
 
 sampling:
   n_rays_h: 16

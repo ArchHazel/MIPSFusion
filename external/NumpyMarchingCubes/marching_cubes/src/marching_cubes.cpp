@@ -3,7 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <list>
-
+#include <limits>
 #include "tables.h"
 #include "sparsegrid3.h"
 #include "marching_cubes.h"

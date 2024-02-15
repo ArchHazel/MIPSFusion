@@ -40,12 +40,12 @@ class Logger():
 
     # @brief: save state tensors
     def save_ckpt(self, frame_id, save_path):
+
         tensor_dict = {
-            # pose-related tensors
             "kf_c2w": self.slam.kf_c2w,
             "est_c2w_data": self.slam.est_c2w_data,
             "est_c2w_data_rel": self.slam.est_c2w_data_rel,
-
+            
             # keyframe-related tensors
             "keyframe_ref": self.slam.keyframe_ref,
             "keyframe_localMLP": self.kfSet.keyframe_localMLP,
@@ -65,6 +65,21 @@ class Logger():
 
             "do_globalBA": self.slam.do_globalBA
         }
+
+        try:
+            self.slam.kf_c2w.cpu()
+
+            print('kf_c2w can be converted to cpu. Save kf_c2w, est_c2w_data, est_c2w_data_rel.')
+            tensor_dict.update({
+                # pose-related tensors
+                "kf_c2w": self.slam.kf_c2w,
+                "est_c2w_data": self.slam.est_c2w_data,
+                "est_c2w_data_rel": self.slam.est_c2w_data_rel,
+            })
+
+        except RuntimeError as e:
+            print('Cannot convert kf_c2w to cpu. CUDA error: initialization error', e)
+
         torch.save(tensor_dict, save_path)
         print("Checkpoint for frame_%d was saved." % frame_id)
 
