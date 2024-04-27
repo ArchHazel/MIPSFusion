@@ -20,7 +20,7 @@ PyObject* marching_cubes(PyArrayObject* arr, double isovalue, double truncation)
     long numy = upper[1] - lower[1] + 1;
     long numz = upper[2] - lower[2] + 1;
     std::vector<double> vertices;
-    std::vector<size_t> polygons;
+    std::vector<unsigned long> polygons;
     
 //    auto pyarray_to_cfunc = [&](long x, long y, long z) -> double {
 //        const npy_intp c[3] = {x, y, z};
@@ -41,7 +41,7 @@ PyObject* marching_cubes(PyArrayObject* arr, double isovalue, double truncation)
     std::vector<double>::const_iterator it = vertices.begin();
     for(int i=0; it!=vertices.end(); ++i, ++it)
         *reinterpret_cast<double*>(PyArray_GETPTR1(verticesarr, i)) = *it;
-    std::vector<size_t>::const_iterator it2 = polygons.begin();
+    std::vector<unsigned long>::const_iterator it2 = polygons.begin();
     for(int i=0; it2!=polygons.end(); ++i, ++it2)
         *reinterpret_cast<unsigned long*>(PyArray_GETPTR1(polygonsarr, i)) = *it2;
     

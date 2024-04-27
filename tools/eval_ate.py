@@ -18,7 +18,7 @@ def get_tensor_from_camera(RT, Tquad=False):
             gpu_id = RT.get_device()
         RT = RT.numpy()
 
-    from mathutils import Matrix
+    from mathutils import Matrix 
     R, T = RT[:3, :3], RT[:3, 3]
     rot = Matrix(R)
     quad = rot.to_quaternion()

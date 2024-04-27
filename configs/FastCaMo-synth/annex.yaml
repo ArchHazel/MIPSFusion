@@ -1,0 +1,25 @@
+inherit_from: configs/FastCaMo-synth/kinect.yaml
+
+mapping:
+  bound: [[-5, 5], [-5, 5], [-5, 5]]
+  marching_cubes_bound: [[-5, 5], [-5, 5], [-5, 5]]
+
+cam:
+  H: 1080
+  W: 1920
+  fx: 914.5
+  fy: 914.7
+  cx: 962.3
+  cy: 550.1
+
+data:
+  num_workers: 4
+  datadir: D:\datasets\kinect\annex
+  trainskip: 1
+  output: D:\datasets\kinect\annex
+  exp_name: "0"
+  starting_frame: -1
+
+mesh:
+  voxel_final:  0.05
+

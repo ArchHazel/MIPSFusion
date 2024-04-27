@@ -190,7 +190,7 @@ class Mesher(object):
     def pts_in_voxelgrid(self, points, voxelgrid):
         pts_3d = o3d.utility.Vector3dVector(points.astype(np.float64))
         containing_mask = voxelgrid.check_if_included(pts_3d)  # list(bool)
-        containing_mask = np.array(containing_mask, dtype=np.bool)
+        containing_mask = np.array(containing_mask, dtype=bool)
         return containing_mask
 
 

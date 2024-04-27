@@ -169,7 +169,7 @@ void extract_isosurface_at_position(
 	//}
 	if (!valid000 || !valid100 || !valid010 || !valid001 || !valid110 || !valid011 || !valid101 || !valid111) return;
 	
-	uint cubeindex = 0;
+	unsigned int cubeindex = 0;
 	if (dist010 < isolevel) cubeindex += 1;
 	if (dist110 < isolevel) cubeindex += 2;
 	if (dist100 < isolevel) cubeindex += 4;
@@ -184,8 +184,8 @@ void extract_isosurface_at_position(
 	//	printf("dists (%f, %f, %f, %f, %f, %f, %f, %f)\n", dist000, dist100, dist010, dist001, dist110, dist011, dist101, dist111);
 	//	printf("cubeindex %d\n", cubeindex);
 	//}
-	for (uint k = 0; k < 8; k++) {
-		for (uint l = 0; l < 8; l++) {
+	for (unsigned int k = 0; k < 8; k++) {
+		for (unsigned int l = 0; l < 8; l++) {
 			if (distArray[k] * distArray[l] < 0.0f) {
 				if (fabs(distArray[k]) + fabs(distArray[l]) > thres) return;
 			}

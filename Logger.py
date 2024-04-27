@@ -19,7 +19,8 @@ class Logger():
         self.device = self.slam.device
         self.dataset = self.slam.dataset
         self.kfSet = self.slam.kfSet
-        self.bounding_box = self.slam.bounding_box.clone()
+        # self.bounding_box = self.slam.bounding_box.clone()
+        self.bounding_box = torch.from_numpy(np.array(self.config["mapping"]["bound"])).to(self.device)
         self.marching_cube_bound = self.slam.marching_cube_bound.clone()
         self.kf_ref = self.slam.keyframe_ref  # Tensor(num_kf, ), dtype=torch.int
         self.kf_c2w = self.slam.kf_c2w  # Tensor(num_kf, 4, 4)
@@ -69,7 +70,7 @@ class Logger():
         try:
             self.slam.kf_c2w.cpu()
 
-            print('kf_c2w can be converted to cpu. Save kf_c2w, est_c2w_data, est_c2w_data_rel.')
+            # print('kf_c2w can be converted to cpu. Save kf_c2w, est_c2w_data, est_c2w_data_rel.')
             tensor_dict.update({
                 # pose-related tensors
                 "kf_c2w": self.slam.kf_c2w,
@@ -81,7 +82,7 @@ class Logger():
             print('Cannot convert kf_c2w to cpu. CUDA error: initialization error', e)
 
         torch.save(tensor_dict, save_path)
-        print("Checkpoint for frame_%d was saved." % frame_id)
+        # print("Checkpoint for frame_%d was saved." % frame_id)
 
 
     # @brief: Load the model parameters and the estimated pose
@@ -112,10 +113,8 @@ class Logger():
             else:  # case 2: for non-keyframes
                 kf_id = i // self.config["mapping"]["keyframe_every"]
                 kf_frame_id = kf_id * self.config["mapping"]["keyframe_every"]
-                # c2w_key = poses[kf_frame_id]  # pose of ref keyframe (in Local Coordinate System)
-                c2w_key = self.est_c2w_data[kf_frame_id]  # pose of ref keyframe (in Local Coordinate System)
-                delta = self.est_c2w_data_rel[i]  # relative pose of current frame w.r.t. ref keyframe
-                # poses.append(delta @ c2w_key)  # absolute pose of current keyframe
+                c2w_key = self.est_c2w_data[kf_frame_id]  # pose of ref keyframe
+                delta = self.est_c2w_data_rel[i]  # relative pose of current frame 
                 poses.append(c2w_key @ delta)  # absolute pose of current keyframe
         poses = torch.stack(poses, dim=0)
         return poses
@@ -237,11 +236,20 @@ class Logger():
         save_dir = os.path.join(self.config["data"]["output"], self.config["data"]["exp_name"], "keyframe")
         os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, "frame_%d.png" % i)
+        mask_path = os.path.join(save_dir, "mask_%d.png" % i)
 
         with torch.no_grad():
             gt_depth_np = gt_depth.cpu().numpy()
             gt_color_np = gt_color.cpu().numpy()
             valid_mask = (gt_depth.squeeze() > self.config["cam"]["near"]) * (gt_depth.squeeze() < self.config["cam"]["far"])  # Tensor(H, W), dtype=torch.bool
+            print("valid_mask: ", valid_mask.shape)
+            print("gt_color_np: ", gt_color_np.shape)
+            red = np.ones_like(gt_color_np[:,:,0])
+            red[~ valid_mask] = 1
+            remaining = np.multiply(gt_color_np,valid_mask.unsqueeze(-1).cpu().numpy())
+            remaining[:,:,0][~ valid_mask] = 1
+            
+            plt.imsave(mask_path, remaining)
 
             rendered_color, rendered_depth = self.render_full_img(model, pose_local, gt_depth)  # Tensor(H, W, 3) / Tensor(H, W)
             rendered_color = rendered_color.cpu().numpy()

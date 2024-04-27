@@ -35,8 +35,8 @@ class MIPSFusion():
         self.create_active_localMLP_vars()
 
         try:
-            # mp.set_start_method('spawn', force=True)
-            mp.set_start_method('fork', force=True)
+            mp.set_start_method('spawn', force=True)
+            # mp.set_start_method('fork', force=True)
         except RuntimeError:
             pass
 
@@ -145,17 +145,24 @@ class MIPSFusion():
         loss = 0
         if rgb:
             loss += self.config["training"]["rgb_weight"] * ret["rgb_loss"]
+            # print("rgb_loss", ret["rgb_loss"])
         if depth:
             loss += self.config["training"]["depth_weight"] * ret["depth_loss"]
+            # print("depth_loss", ret["depth_loss"])
         if sdf:
             loss += self.config["training"]["sdf_weight"] * ret["sdf_loss"]
+            # print("sdf_loss", ret["sdf_loss"])
         if fs:
             loss += self.config["training"]["fs_weight"] * ret["fs_loss"]
+            # print("fs_loss", ret["fs_loss"])
+        # print("loss", loss)
         return loss             
 
 
     def first_frame_mapping(self, batch, n_iters=100):
         print('Initializing first frame')
+        # print(self.bounding_box)
+        # print(self.model.bounding_box)
         c2w = batch["c2w"][0].to(self.device)  # gt pose(c2w) of first pose, Tensor(4, 4), device=cuda:0
         c2w_local = torch.eye(4).to(self.device)
 
@@ -174,6 +181,7 @@ class MIPSFusion():
 
         # Step 2: training scene representation (default: n_iters=500)
         self.model.train()
+        torch.autograd.set_detect_anomaly(True)
         for i in range(n_iters):
             self.map_optimizer.zero_grad()
             indice = self.select_samples(self.dataset.H, self.dataset.W, self.config["mapping"]["sample"])  # sample pixels every round
@@ -187,6 +195,7 @@ class MIPSFusion():
             rays_d = torch.sum(rays_d_cam[..., None, :] * c2w_local[:3, :3], -1)  # Tensor(N, 3)
 
             ret = self.model.forward(rays_o, rays_d, target_s, target_d)
+            # print("first-time mapping",i,self.bounding_box)
             loss = self.get_loss_from_ret(ret)
             loss.backward()
             self.map_optimizer.step()
@@ -354,6 +363,7 @@ class MIPSFusion():
                     kf_id = kf_ids_all[1:][i]
                     pose_world = first_kf_pose @ pose_local  # Tensor(4, 4)
                     self.kf_c2w[kf_id] = pose_world
+                    print("kf_id", kf_id, "pose_world", self.kf_c2w[kf_id])
                 else:  # for overlapping keyframes
                     frame_id = frame_ids_all[1:][i]
                     kf_id = kf_ids_all[1:][i]
@@ -463,13 +473,13 @@ class MIPSFusion():
     # @brief: Tracking camera pose of the current frame;
     # @param batch["c2w"]: ground truth camera pose, Tensor(B, 4, 4);
     #        batch["rgb"]: RGB image, Tensor(B, H, W, 3);
-    #        batch["depth"]: depth image, Tensor(B, H, W, 1);
+    #        batch["depth"]: depth image, Tensor(B, H, W);
     #        batch["direction"]: ray direction, Tensor(B, H, W, 3);
     # @param frame_id: current frame_Id (int);
-    # @param n_iter_RO: iter num for RO, int;
-    # @param n_iter_GO: iter num for RO, int;
-    # @param switch_tracking: whether it's processing active submap switch, bool.
-    def tracking_render(self, batch, frame_id, n_iter_RO, n_iter_GO, switch_tracking=False):
+    # @param n_iter_RO: iter num for RO, int; randomized optimization
+    # @param n_iter_GO: iter num for GO, int; Gradient-based optimization
+    # @param switch_tracking: whether it's processing active submap switch, bool. False by default.
+    def tracking_render(self, batch, frame_id, n_iter_RO, n_iter_GO, switch_tracking=False): 
         if switch_tracking:
             cur_c2w = self.est_c2w_data[frame_id]
         else:
@@ -477,7 +487,7 @@ class MIPSFusion():
             cur_c2w = self.predict_current_pose(frame_id, const_speed)  # get initial pose of this frame, Tensor(4, 4)
         self.freeze_model()
 
-        # Step 1: do RO
+        # Step 1: do RO: Randomized Optimization
         if n_iter_RO > 0:
             last_pose = self.est_c2w_data[frame_id - 1].clone().to(self.device)
             if switch_tracking:
@@ -499,7 +509,7 @@ class MIPSFusion():
         else:
             cur_rot, cur_trans, pose_optimizer = self.get_pose_param_optim(cur_c2w[None, ...], mapping=False)
 
-        # Step 2: do GO
+        # Step 2: do GO: Gradient-based Optimization
         for i in range(n_iter_GO):
             pose_optimizer.zero_grad()
             c2w_est = self.matrix_from_tensor(cur_rot, cur_trans)  # quat + trans_vec --> 4X4 mat, Tensor(1, 4, 4), device=cuda:0
@@ -661,22 +671,30 @@ class MIPSFusion():
 
     # entry function
     def run(self):
+        # print("run()",self.model.bounding_box)
         debug_mesh = True
         # Create InactiveMap process
         processes = []
         for rank in range(1):
             # mp.set_start_method('fork')
             p = mp.Process(target=self.inactive_map_start, args=())
-            p.start()
+            # p.start()
             processes.append(p)
+        
+        self.create_bounds()
+        
+        # print("start process",self.model.bounding_box)
 
         print(printCurrentDatetime() + "(Active Mapping process) Process starts!!! (PID=%d)" % os.getpid())
 
         self.create_optimizer()
         data_loader = DataLoader(self.dataset, num_workers=self.config["data"]["num_workers"])
 
+        
+
         for i, batch in tqdm( enumerate(data_loader) ):
             if i == 0:  # First frame mapping
+                # print("i==0",self.bounding_box)
                 self.first_frame_mapping(batch, self.config["mapping"]["first_iters"])
                 self.logger.img_render_save(self.model, self.est_c2w_data[i], batch["rgb"].squeeze(0), batch["depth"].squeeze(0), 0)
             else:
@@ -689,6 +707,8 @@ class MIPSFusion():
 
                 # Add keyframe (default: add a keyframe for every N_interval frames)
                 if i % self.config["mapping"]["keyframe_every"] == 0:
+                    print("Start adding keyframe...")
+                    print("keyframe idx:",i)
                     kf_id = i // self.config["mapping"]["keyframe_every"]  # keyframe_Id of this keyframe
                     self.kfSet.add_keyframe(batch)
 
@@ -720,16 +740,19 @@ class MIPSFusion():
                     pose_evaluation(self.pose_gt, pose_world, 1, os.path.join(self.config["data"]["output"], self.config["data"]["exp_name"]), i, img="pose")
                     self.logger.save_traj_tum(pose_world, os.path.join(self.config["data"]["output"], self.config["data"]["exp_name"], "traj_%d.txt" % i) )
 
-                # if self.config["mesh"]["ckpt_freq"] > 0 and i % self.config["mesh"]["ckpt_freq"] == 0:
-                if debug_mesh:
-
+                if  (self.config["mesh"]["ckpt_freq"] > 0 and i % self.config["mesh"]["ckpt_freq"] == 0):
+                # if i % 140 == 0:
+                    print("debug")
+                    print("Start extracting mesh...")
+                    print("extrect idx:",i)
                     # extract_mesh(self.model, self.est_c2w_data, self.dataset, self.config, i, self.logger, self.device)
-                    # self.logger.extract_a_mesh(self.logger.slam.tracked_frame_Id, 0, self.logger.model_list[0])  # for debug
+                    self.logger.extract_a_mesh( frame_id=i, localMLP_Id= 0, model=self.model)  # for debug
                     # self.logger.extract_mesh_jointly_simple(submesh_list, save_path=self.config["data"]["output"])
-
                     self.logger.save_ckpt_active(self.tracked_frame_Id[0], self.model, self.active_localMLP_Id[0])
                     self.ckpt_frame_Id[0] = i
-        
+                
+        print("num_frames:",self.dataset.num_frames)
+        # if the num_frames is zero, will get list stack empty error
         pose_relative = self.logger.convert_relative_pose(self.dataset.num_frames-1)
         pose_world = self.logger.convert_world_pose(pose_relative)
 

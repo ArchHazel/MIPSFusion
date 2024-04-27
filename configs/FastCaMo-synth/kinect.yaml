@@ -52,8 +52,8 @@ mapping:
     key_edge_weight: 0.1
 
 tracking:
-  iter_RO: 5  # iter num for RO
-  iter: 10  # iter num for GO
+  iter_RO: 5  # iter num for Randomized Optimization
+  iter: 10  # iter num for Gradient-based Optimization
   sample: 1000
   pc_samples: 40960
   lr_rot: 0.001  # default: 0.001

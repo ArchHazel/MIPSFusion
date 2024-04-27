@@ -17,7 +17,7 @@ def reduce_or(masks):
 def reduce_and(masks):
     masks_value = masks.astype(np.float32)
     mul_masks_value = np.cumprod(masks_value, axis=-1)[:, -1]  # ndarray(n, )
-    mul_masks = mul_masks_value.astype(np.bool)  # ndarray(n, ), dtype=np.bool
+    mul_masks = mul_masks_value.astype(bool)  # ndarray(n, ), dtype=np.bool
     return mul_masks
 
 

@@ -3,6 +3,7 @@ import os
 import cv2
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 from torch.utils.data import Dataset
 from .utils import get_camera_rays
 
@@ -94,6 +95,7 @@ class ReplicaDataset(BaseDataset):
 
         if self.rays_d is None:
             self.rays_d = get_camera_rays(self.H, self.W, self.fx, self.fy, self.cx, self.cy)
+       
 
         color_data = torch.from_numpy(color_data.astype(np.float32))
         depth_data = torch.from_numpy(depth_data.astype(np.float32))
@@ -247,6 +249,8 @@ class FastCaMoDataset(BaseDataset):
         self.img_files = sorted(glob.glob(os.path.join(self.basedir, 'color', '*.png')), key=lambda x: float(os.path.basename(x)[:-4]))
         self.depth_paths = sorted(glob.glob(os.path.join(self.basedir, 'depth', '*.png')), key=lambda x: float(os.path.basename(x)[:-4]))
 
+
+
         if self.config["data"]["starting_frame"] > 0:
             self.img_files = [i for i in self.img_files if int(os.path.basename(i)[:-4]) >= self.config["data"]["starting_frame"]]
             self.depth_paths = [i for i in self.depth_paths if int(os.path.basename(i)[:-4]) >= self.config["data"]["starting_frame"]]
@@ -254,6 +258,7 @@ class FastCaMoDataset(BaseDataset):
         self.load_poses(os.path.join(self.basedir, 'pose'))  # filling self.poses
 
         self.frame_ids = range(0, len(self.img_files))
+
         self.num_frames = len(self.frame_ids)
 
         if self.config["cam"]["crop_edge"] > 0:
@@ -262,7 +267,9 @@ class FastCaMoDataset(BaseDataset):
             self.cx -= self.config["cam"]["crop_edge"]
             self.cy -= self.config["cam"]["crop_edge"]
 
-        self.rays_d = get_camera_rays(self.H, self.W, self.fx, self.fy, self.cx, self.cy)
+        # print(f"fx: {self.fx}, fy: {self.fy}, cx: {self.cx}, cy: {self.cy}")
+
+        self.rays_d = get_camera_rays(self.H, self.W, self.fx, self.fy, self.cx, self.cy) # Tensor(3052, 4076, 3)
 
     def __len__(self):
         return self.num_frames
@@ -282,7 +289,6 @@ class FastCaMoDataset(BaseDataset):
         color_data = cv2.cvtColor(color_data, cv2.COLOR_BGR2RGB)
         color_data = color_data / 255.
         depth_data = depth_data.astype(np.float32) / self.png_depth_scale * self.sc_factor
-
         H, W = depth_data.shape
         color_data = cv2.resize(color_data, (W, H))
 

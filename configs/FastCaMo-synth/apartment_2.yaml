@@ -5,7 +5,7 @@ mapping:
   marching_cubes_bound: [[-0.6, 2.95], [0.5, 7.05], [-1.15, 3.05]]
 
 data:
-  datadir: /mnt/d/datasets/FastCaMo-synth-data(raw)/apartment_2
+  datadir:  D:\datasets\FastCaMo-synth-data(raw)\apartment_2
   trainskip: 1
   output: output/FastCaMo-synth/apartment_2
   exp_name: "0"

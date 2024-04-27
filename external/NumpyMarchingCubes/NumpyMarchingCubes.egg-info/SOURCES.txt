@@ -6,4 +6,15 @@ NumpyMarchingCubes.egg-info/top_level.txt
 marching_cubes/__init__.py
 marching_cubes/src/_mcubes.cpp
 marching_cubes/src/marching_cubes.cpp
+marching_cubes/src/marching_cubes.h
+marching_cubes/src/pyarray_symbol.h
+marching_cubes/src/pyarraymodule.h
 marching_cubes/src/pywrapper.cpp
+marching_cubes/src/pywrapper.h
+marching_cubes/src/_mcubes.cpp
+marching_cubes/src/marching_cubes.cpp
+marching_cubes/src/marching_cubes.h
+marching_cubes/src/pyarray_symbol.h
+marching_cubes/src/pyarraymodule.h
+marching_cubes/src/pywrapper.cpp
+marching_cubes/src/pywrapper.h

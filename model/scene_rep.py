@@ -12,7 +12,9 @@ class JointEncoding(nn.Module):
     def __init__(self, config, bound_box, coords_norm_factor):
         super(JointEncoding, self).__init__()
         self.config = config
-        self.bounding_box = bound_box
+        # print("JointEncoing input param",bound_box)
+        self.bounding_box = torch.from_numpy(np.array(self.config["mapping"]["bound"])).to("cuda:0")
+        # print("in jointEncoding initialization",self.bounding_box)
         self.coords_norm_factor = coords_norm_factor
         self.get_resolution()
         self.get_encoding(config)
@@ -137,6 +139,9 @@ class JointEncoding(nn.Module):
         # normalize the input to [0, 1]
         if self.config["grid"]["tcnn_encoding"]:
             if self.config["grid"]["use_bound_normalize"]:
+                # inputs_flat = (inputs_flat - self.bounding_box[:, 0]) / (self.bounding_box[:, 1] - self.bounding_box[:, 0])
+                #self.bounding_box[:,0] = torch.zeros(3, device="cuda:0") - torch.Tensor([5,5,5]).to("cuda:0") 
+                #self.bounding_box[:, 1] = torch.zeros(3, device="cuda:0") + torch.Tensor([5,5,5]).to("cuda:0")
                 inputs_flat = (inputs_flat - self.bounding_box[:, 0]) / (self.bounding_box[:, 1] - self.bounding_box[:, 0])
             else:
                 inputs_flat = (inputs_flat + self.coords_norm_factor) / (2 * self.coords_norm_factor)
@@ -154,7 +159,7 @@ class JointEncoding(nn.Module):
         n_rays = rays_o.shape[0]  # number of sampled rays, int
 
         # Step 1: sampling depth value along each given ray
-        if target_d is not None:  # default
+        if target_d is not None:  # default: given gt depth valuew
             z_samples = torch.linspace(-self.config["training"]["range_d"], self.config["training"]["range_d"], steps=self.config["training"]["n_range_d"]).to(target_d) 
             z_samples = z_samples[None, :].repeat(n_rays, 1) + target_d  # Tensor(n_rays, n_range_d), device=cuda:0
             z_samples[target_d.squeeze() <= 0] = torch.linspace(self.config["cam"]["near"], self.config["cam"]["far"], steps=self.config["training"]["n_range_d"]).to(target_d)  # for those sampled pixels who have no gt depth values
@@ -202,6 +207,7 @@ class JointEncoding(nn.Module):
         '''
 
         # Get render results
+        # print("forward(), in scene_rep.py JointEncoding",self.bounding_box)
         rend_dict = self.render_rays(rays_o, rays_d, target_d=target_d)
 
         if not self.training:
@@ -213,8 +219,10 @@ class JointEncoding(nn.Module):
         rgb_weight[rgb_weight==0] = self.config["training"]["rgb_missing"]  # Tensor(N, 1), dtype=torch.bool
 
         # Get render loss
+        # RGB loss
         rgb_loss = compute_loss(rend_dict["rgb"] * rgb_weight, target_rgb * rgb_weight)
         psnr = mse2psnr(rgb_loss)
+        # depth loss
         depth_loss = compute_loss(rend_dict["depth"].squeeze()[valid_depth_mask], target_d.squeeze()[valid_depth_mask])
         
         # Get sdf loss

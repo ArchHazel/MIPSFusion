@@ -106,6 +106,7 @@ def convert_to_local_pts2(wrld_pts, first_kf_pose):
 #-@return rays_o: ray origins of selection pixels in World Coordinate System, Tensor(N, 3).
 def rays_camera_to_world(rays_d_cam, c2w_mat):
     rays_num = rays_d_cam.shape[0]
+    # print('rays_d_cam:', rays_d_cam.shape, rays_d_cam.dtype)
     rays_o = c2w_mat[None, :3, -1].repeat(rays_num, 1)  # Tensor(N, 3)
     rays_d = torch.sum(rays_d_cam[..., None, :] * c2w_mat[:3, :3], -1)  # Tensor(N, 3)
     return rays_d, rays_o
@@ -131,12 +132,13 @@ def rays_camera_to_world2(rays_d_cam, c2w_mats, pose_indices):
 #-@return xyz_len: Tensor(3, ).
 @torch.no_grad()
 def get_frame_surface_bbox(frame_pose, frame_depth, rays_d, dist_near, dist_far):
+
     rays_d_w, rays_o_w = rays_camera_to_world(rays_d.reshape((-1, 3)), frame_pose)  # Tensor(N, 3) / Tensor(N, 3)
 
     # filter the pixels invalid depth values
+
     frame_depth = frame_depth.reshape((-1, 1))  # Tensor(N, 1)
     valid_mask = (frame_depth.squeeze() > dist_near) * (frame_depth.squeeze() < dist_far)  # Tensor(N, ), dtype=torch.bool
-
     pts_world = rays_o_w + rays_d_w * frame_depth
     valid_pts_world = pts_world[valid_mask]  # Tensor(N', 3)
 

@@ -5,9 +5,14 @@ mapping:
   marching_cubes_bound: [[-5, 5], [-5, 5], [-5, 5]]
 
 data:
-  datadir: /mnt/c/Users/ivc-lab-5/Desktop/hazel/kinect/dataset
+  num_workers: 1
+  datadir: C:\Users\ivc-lab-5\Desktop\hazel\kinect\dataset
   trainskip: 1
-  output: output/FastCaMo-synth/petr404
+  output: C:\Users\ivc-lab-5\Desktop\hazel\MIPSFusion\FastCaMo-synth\petr404
   exp_name: "0"
   starting_frame: -1
+
+tracking:
+  iter: 25  # iter num for Gradient-based Optimization
+  sample: 10000
 
