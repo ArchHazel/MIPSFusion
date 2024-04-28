@@ -53,6 +53,8 @@ python vis/render_mesh.py --config configs/FastCaMo-synth/apartment_2.yaml --seq
 
 ## Dataset
 yaya da bendan
+FastCaMo-synth dataset (proposed in [ROSEFusion](https://github.com/jzhzhang/ROSEFusion)) can be found [here](https://1drv.ms/u/c/b190b6248ff4b487/EYDML_iplvpCht3XPdxoolYBRznXPXOWnigS-B6SxKKc3g?e=eLk9HZ)(with GT poses), and our FastCaMo-large dataset can be found [here](https://drive.google.com/drive/folders/186viK0tSAFVDO_6YJbC3MGXOXzcBQT_z?usp=drive_link).
+
 
 ## Acknowledgement
 Some codes are modified from [Neural RGB-D Surface Reconstruction](https://dazinovic.github.io/neural-rgbd-surface-reconstruction/), [NICE-SLAM](https://github.com/cvg/nice-slam), [Co-SLAM](https://github.com/HengyiWang/Co-SLAM/tree/main), [pypose](https://github.com/pypose/pypose), and [tiny-cuda-nn](https://github.com/NVlabs/tiny-cuda-nn). Thanks to all of the above.
